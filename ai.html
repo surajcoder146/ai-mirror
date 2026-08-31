@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Mirror - Cute Expressive Eyes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Outfit', sans-serif;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Ambient Glow Container */
+        .ambient-glow {
+            position: absolute;
+            width: 70vw;
+            height: 50vh;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: none;
+            filter: blur(60px);
+            pointer-events: none;
+            transition: background 0.8s ease, opacity 0.5s ease;
+            z-index: 1;
+        }
+
+        /* Smart Mirror Header UI */
+        .header-ui {
+            position: absolute;
+            top: 25px;
+            width: 90%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            opacity: 0.85;
+            transition: opacity 0.4s ease;
+        }
+
+        .header-ui.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .clock-widget {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .time-text {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+        }
+
+        .date-text {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #999999;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+        }
+
+        .status-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background-color: #ffffff;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+            animation: pulseDot 2s infinite;
+        }
+
+        @keyframes pulseDot {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.85);
+            }
+        }
+
+        /* SVG Eye Face Container */
+        .face-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            max-width: 900px;
+            height: 450px;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        svg#eyeContainer {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        /* Blushing cheeks */
+        .blush-cheek {
+            opacity: 0;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            transform-origin: center;
+        }
+
+        .blush-cheek.active {
+            opacity: 0.65;
+            transform: scale(1.1);
+        }
+
+        /* Eye Lash & Stroke Details */
+        .eye-stroke {
+            stroke: #ffffff;
+            stroke-width: 11;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: #ffffff;
+        }
+
+        .eyelash-stroke {
+            stroke: #ffffff;
+            stroke-width: 9;
+            stroke-linecap: round;
+            fill: none;
+            transition: stroke-dasharray 0.3s ease;
+        }
+
+        .pupil-group {
+            transition: transform 0.05s linear;
+        }
+
+        .pupil-main {
+            fill: #000000;
+        }
+
+        .shine-large {
+            fill: #ffffff;
+        }
+
+        .shine-small {
+            fill: #ffffff;
+            opacity: 0.9;
+        }
+
+        /* Eyelid overlay for blinking & expressions */
+        .eyelid-overlay {
+            fill: #000000;
+            transition: transform 0.12s ease-out;
+        }
+
+        /* Cute Wink Arc line */
+        .wink-arc {
+            fill: none;
+            stroke: #0d0d0d;
+            stroke-width: 12;
+            stroke-linecap: round;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        /* Voice Wave Bar at Bottom */
+        .voice-visualizer {
+            position: absolute;
+            bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 10;
+            opacity: 0.85;
+        }
+
+        .voice-bar {
+            width: 4px;
+            height: 16px;
+            background: linear-gradient(180deg, #ffffff, #888888);
+            border-radius: 4px;
+            transition: height 0.08s ease;
+        }
+
+        /* Floating Control HUD */
+        .hud-toggle-btn {
+            position: absolute;
+            bottom: 25px;
+            right: 25px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .hud-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.08);
+        }
+
+        .control-hud {
+            position: absolute;
+            bottom: 80px;
+            right: 25px;
+            width: 320px;
+            background: rgba(20, 20, 20, 0.92);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 20px;
+            z-index: 99;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            pointer-events: none;
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .control-hud.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+        }
+
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #f1f5f9;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            padding-bottom: 10px;
+        }
+
+        .hud-section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #999999;
+            margin-bottom: 6px;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .hud-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e2e8f0;
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .hud-btn:hover {
+            background: rgba(255, 255, 255, 0.22);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        .hud-btn.active {
+            background: #ffffff;
+            color: #000000;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+        }
+
+        .hud-btn span.emoji {
+            font-size: 1.1rem;
+        }
+
+        .color-row {
+            display: flex;
+            gap: 10px;
+            justify-content: space-around;
+        }
+
+        .color-swatch {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.2);
+        }
+
+        .color-swatch.selected {
+            border-color: #ffffff;
+            transform: scale(1.15);
+        }
+
+        /* Hidden video element for WebCam tracking */
+        #webcam {
+            display: none;
+        }
+
+        /* Fullscreen indicator prompt */
+        .hint-toast {
+            position: absolute;
+            top: 80px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #cbd5e1;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0.8;
+            transition: opacity 1s ease;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Ambient Glow Background -->
+    <div class="ambient-glow" id="ambientGlow"></div>
+
+    <!-- Smart Mirror Top Header -->
+    <div class="header-ui" id="headerUi">
+        <div class="clock-widget">
+            <div class="time-text" id="timeText">00:00</div>
+            <div class="date-text" id="dateText">AI MIRROR DISPLAY</div>
+        </div>
+        <div class="status-badge">
+            <div class="status-dot"></div>
+            <span id="statusText">AI TRACKING ACTIVE</span>
+        </div>
+    </div>
+
+    <div class="hint-toast" id="hintToast">Press 'H' for Settings • Double-click for Fullscreen</div>
+
+    <!-- Main Eye Face Container -->
+    <div class="face-container">
+        <svg id="eyeContainer" viewBox="0 0 1000 500">
+            <defs>
+                <!-- Monochrome Blush Gradient -->
+                <radialGradient id="blushGrad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4" />
+                    <stop offset="60%" stop-color="#cccccc" stop-opacity="0.15" />
+                    <stop offset="100%" stop-color="#cccccc" stop-opacity="0" />
+                </radialGradient>
+
+                <!-- Eye Eyelid Clip Path Left -->
+                <clipPath id="leftScleraClip">
+                    <path d="M 190 275 C 180 90, 440 90, 430 275 C 390 315, 230 315, 190 275 Z" />
+                </clipPath>
+
+                <!-- Eye Eyelid Clip Path Right -->
+                <clipPath id="rightScleraClip">
+                    <path d="M 570 275 C 560 90, 820 90, 810 275 C 770 315, 610 315, 570 275 Z" />
+                </clipPath>
+
+                <!-- Heart Pupil Highlight Shape -->
+                <g id="heartShape">
+                    <path d="M 0,-6 C -4,-12 -12,-8 -12,-2 C -12,4 0,12 0,14 C 0,12 12,4 12,-2 C 12,-8 4,-12 0,-6 Z"
+                        fill="#ffffff" />
+                </g>
+
+                <!-- Star Pupil Highlight Shape -->
+                <g id="starShape">
+                    <path d="M 0,-12 L 3,-3 L 12,0 L 3,3 L 0,12 L -3,3 L -12,0 L -3,-3 Z" fill="#ffffff" />
+                </g>
+            </defs>
+
+            <!-- Rosy Cheek Blush Circles -->
+            <ellipse class="blush-cheek active" id="leftBlush" cx="210" cy="330" rx="45" ry="25"
+                fill="url(#blushGrad)" />
+            <ellipse class="blush-cheek active" id="rightBlush" cx="790" cy="330" rx="45" ry="25"
+                fill="url(#blushGrad)" />
+
+            <!-- ================= LEFT EYE ================= -->
+            <g id="leftEyeGroup">
+                <!-- Outer Eyelashes (Left Eye - 2 lashes curving outward-up) -->
+                <path class="eyelash-stroke" d="M 215 170 C 185 150, 155 145, 140 155" />
+                <path class="eyelash-stroke" d="M 235 130 C 205 105, 175 95, 160 110" />
+
+                <!-- Sclera White Background & Outline -->
+                <path class="eye-stroke" id="leftSclera"
+                    d="M 190 275 C 180 90, 440 90, 430 275 C 390 315, 230 315, 190 275 Z" />
+
+                <!-- Pupil & Iris Group (Clipped inside Sclera) -->
+                <g clip-path="url(#leftScleraClip)">
+                    <g class="pupil-group" id="leftPupilGroup" transform="translate(310, 220)">
+                        <!-- Main Pupil Circle -->
+                        <ellipse class="pupil-main" id="leftPupilMain" cx="0" cy="0" rx="72" ry="72" />
+
+                        <!-- Dual Specular Shine Dots (Exact image placement) -->
+                        <!-- Primary Large Top-Right Shine -->
+                        <g id="leftShineLargeGroup" transform="translate(24, -24)">
+                            <circle class="shine-large" id="leftShineCircle" cx="0" cy="0" r="18" />
+                            <path class="shine-large" id="leftShineHeart"
+                                d="M 0,-6 C -4,-12 -12,-8 -12,-2 C -12,4 0,12 0,14 C 0,12 12,4 12,-2 C 12,-8 4,-12 0,-6 Z"
+                                fill="#ffffff" transform="scale(1.4)" style="display:none;" />
+                            <path class="shine-large" id="leftShineStar"
+                                d="M 0,-12 L 3,-3 L 12,0 L 3,3 L 0,12 L -3,3 L -12,0 L -3,-3 Z" fill="#ffffff"
+                                transform="scale(1.4)" style="display:none;" />
+                        </g>
+                        <!-- Secondary Small Bottom-Left Shine -->
+                        <g id="leftShineSmallGroup" transform="translate(-26, 26)">
+                            <circle class="shine-small" id="leftShineSmall" cx="0" cy="0" r="9" />
+                        </g>
+                    </g>
+
+                    <!-- Top Eyelid Overlay for Blinking/Expressions -->
+                    <path class="eyelid-overlay" id="leftUpperLid" d="M 150 50 L 470 50 L 470 90 L 150 90 Z"
+                        transform="translate(0, 0)" />
+
+                    <!-- Bottom Eyelid Overlay -->
+                    <path class="eyelid-overlay" id="leftLowerLid" d="M 150 320 L 470 320 L 470 360 L 150 360 Z"
+                        transform="translate(0, -35px)" />
+                </g>
+
+                <!-- Wink Arc Line (Left Eye) -->
+                <path class="wink-arc" id="leftWinkArc" d="M 200 240 C 260 170, 360 170, 420 240" />
+            </g>
+
+            <!-- ================= RIGHT EYE ================= -->
+            <g id="rightEyeGroup">
+                <!-- Outer Eyelashes (Right Eye - 2 lashes curving outward-up) -->
+                <path class="eyelash-stroke" d="M 785 170 C 815 150, 845 145, 860 155" />
+                <path class="eyelash-stroke" d="M 765 130 C 795 105, 825 95, 840 110" />
+
+                <!-- Sclera White Background & Outline -->
+                <path class="eye-stroke" id="rightSclera"
+                    d="M 570 275 C 560 90, 820 90, 810 275 C 770 315, 610 315, 570 275 Z" />
+
+                <!-- Pupil & Iris Group (Clipped inside Sclera) -->
+                <g clip-path="url(#rightScleraClip)">
+                    <g class="pupil-group" id="rightPupilGroup" transform="translate(690, 220)">
+                        <!-- Main Pupil Circle -->
+                        <ellipse class="pupil-main" id="rightPupilMain" cx="0" cy="0" rx="72" ry="72" />
+
+                        <!-- Dual Specular Shine Dots -->
+                        <!-- Primary Large Top-Right Shine -->
+                        <g id="rightShineLargeGroup" transform="translate(24, -24)">
+                            <circle class="shine-large" id="rightShineCircle" cx="0" cy="0" r="18" />
+                            <path class="shine-large" id="rightShineHeart"
+                                d="M 0,-6 C -4,-12 -12,-8 -12,-2 C -12,4 0,12 0,14 C 0,12 12,4 12,-2 C 12,-8 4,-12 0,-6 Z"
+                                fill="#ffffff" transform="scale(1.4)" style="display:none;" />
+                            <path class="shine-large" id="rightShineStar"
+                                d="M 0,-12 L 3,-3 L 12,0 L 3,3 L 0,12 L -3,3 L -12,0 L -3,-3 Z" fill="#ffffff"
+                                transform="scale(1.4)" style="display:none;" />
+                        </g>
+                        <!-- Secondary Small Bottom-Left Shine -->
+                        <g id="rightShineSmallGroup" transform="translate(-26, 26)">
+                            <circle class="shine-small" id="rightShineSmall" cx="0" cy="0" r="9" />
+                        </g>
+                    </g>
+
+                    <!-- Top Eyelid Overlay -->
+                    <path class="eyelid-overlay" id="rightUpperLid" d="M 530 50 L 850 50 L 850 90 L 530 90 Z"
+                        transform="translate(0, 0)" />
+
+                    <!-- Bottom Eyelid Overlay -->
+                    <path class="eyelid-overlay" id="rightLowerLid" d="M 530 320 L 850 320 L 850 360 L 530 360 Z"
+                        transform="translate(0, -35px)" />
+                </g>
+
+                <!-- Wink Arc Line (Right Eye) -->
+                <path class="wink-arc" id="rightWinkArc" d="M 580 240 C 640 170, 740 170, 800 240" />
+            </g>
+        </svg>
+    </div>
+
+    <!-- Voice Visualizer Bars -->
+    <div class="voice-visualizer" id="voiceVisualizer">
+        <div class="voice-bar"></div>
+        <div class="voice-bar"></div>
+        <div class="voice-bar"></div>
+        <div class="voice-bar"></div>
+        <div class="voice-bar"></div>
+    </div>
+
+    <!-- HUD Settings Toggle Button -->
+    <button class="hud-toggle-btn" id="hudToggleBtn" title="Toggle Settings (Press H)">
+        ⚙️
+    </button>
+
+    <!-- Control HUD Floating Panel -->
+    <div class="control-hud" id="controlHud">
+        <div class="hud-header">
+            <span>✨ AI MIRROR CONTROLS</span>
+            <span style="font-size:0.75rem; color:#94a3b8;">Press 'H' to hide</span>
+        </div>
+
+        <div>
+            <div class="hud-section-title">Tracking Engine</div>
+            <div class="btn-grid">
+                <button class="hud-btn active" id="modeCamBtn" onclick="setTrackingMode('cam')">
+                    <span class="emoji">📷</span> Camera
+                </button>
+                <button class="hud-btn" id="modeMouseBtn" onclick="setTrackingMode('mouse')">
+                    <span class="emoji">🖱️</span> Mouse
+                </button>
+                <button class="hud-btn" id="modeAutoBtn" onclick="setTrackingMode('auto')">
+                    <span class="emoji">🤖</span> AI Wander
+                </button>
+            </div>
+        </div>
+
+        <div>
+            <div class="hud-section-title">Cute Expressions</div>
+            <div class="btn-grid" id="exprGrid">
+                <button class="hud-btn active" onclick="setExpression('happy', this)">
+                    <span class="emoji">😊</span> Happy
+                </button>
+                <button class="hud-btn" onclick="setExpression('normal', this)">
+                    <span class="emoji">👀</span> Normal
+                </button>
+                <button class="hud-btn" onclick="setExpression('wow', this)">
+                    <span class="emoji">😲</span> Wow!
+                </button>
+                <button class="hud-btn" onclick="setExpression('wink', this)">
+                    <span class="emoji">😉</span> Wink
+                </button>
+                <button class="hud-btn" onclick="setExpression('love', this)">
+                    <span class="emoji">💖</span> Love
+                </button>
+                <button class="hud-btn" onclick="setExpression('sleep', this)">
+                    <span class="emoji">😴</span> Sleep
+                </button>
+            </div>
+        </div>
+
+        <div>
+            <div class="hud-section-title">Ambient Glow Theme</div>
+            <div class="color-row">
+                <div class="color-swatch selected" style="background: linear-gradient(135deg, #ff69b4, #da70d6);"
+                    onclick="setGlowTheme('pink', this)"></div>
+                <div class="color-swatch" style="background: linear-gradient(135deg, #00f0ff, #7000ff);"
+                    onclick="setGlowTheme('cyber', this)"></div>
+                <div class="color-swatch" style="background: linear-gradient(135deg, #00ff87, #60efff);"
+                    onclick="setGlowTheme('emerald', this)"></div>
+                <div class="color-swatch" style="background: linear-gradient(135deg, #ffb703, #fb8500);"
+                    onclick="setGlowTheme('gold', this)"></div>
+                <div class="color-swatch" style="background: #111;" onclick="setGlowTheme('off', this)"></div>
+            </div>
+        </div>
+
+        <div>
+            <div class="btn-grid" style="grid-template-columns: 1fr 1fr;">
+                <button class="hud-btn" onclick="toggleSoundFx()" id="soundBtn">
+                    <span class="emoji">🔊</span> Sound: ON
+                </button>
+                <button class="hud-btn" onclick="toggleFullscreen()">
+                    <span class="emoji">⛶</span> Fullscreen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Video Element for WebCam Tracking -->
+    <video id="webcam" autoplay playsinline muted></video>
+
+    <script>
+        /* ============================================================
+           AI MIRROR - EXPRESSIVE EYE CONTROLLER SCRIPT
+           ============================================================ */
+
+        // DOM Elements
+        const leftPupilGroup = document.getElementById('leftPupilGroup');
+        const rightPupilGroup = document.getElementById('rightPupilGroup');
+        const leftUpperLid = document.getElementById('leftUpperLid');
+        const leftLowerLid = document.getElementById('leftLowerLid');
+        const rightUpperLid = document.getElementById('rightUpperLid');
+        const rightLowerLid = document.getElementById('rightLowerLid');
+        const leftWinkArc = document.getElementById('leftWinkArc');
+        const rightWinkArc = document.getElementById('rightWinkArc');
+        const leftBlush = document.getElementById('leftBlush');
+        const rightBlush = document.getElementById('rightBlush');
+        const leftSclera = document.getElementById('leftSclera');
+        const rightSclera = document.getElementById('rightSclera');
+
+        const leftShineLargeGroup = document.getElementById('leftShineLargeGroup');
+        const leftShineSmallGroup = document.getElementById('leftShineSmallGroup');
+        const rightShineLargeGroup = document.getElementById('rightShineLargeGroup');
+        const rightShineSmallGroup = document.getElementById('rightShineSmallGroup');
+        const leftPupilMain = document.getElementById('leftPupilMain');
+        const rightPupilMain = document.getElementById('rightPupilMain');
+
+        const ambientGlow = document.getElementById('ambientGlow');
+        const statusText = document.getElementById('statusText');
+        const timeText = document.getElementById('timeText');
+        const dateText = document.getElementById('dateText');
+        const controlHud = document.getElementById('controlHud');
+        const hudToggleBtn = document.getElementById('hudToggleBtn');
+        const hintToast = document.getElementById('hintToast');
+        const webcamVideo = document.getElementById('webcam');
+        const voiceBars = document.querySelectorAll('.voice-bar');
+
+        // State Variables
+        let trackingMode = 'cam'; // 'cam' | 'mouse' | 'auto'
+        let currentExpression = 'happy'; // 'happy' | 'normal' | 'wow' | 'wink' | 'love' | 'sleep'
+        let soundEnabled = true;
+
+        // Pupil Target & Current Positions (for smooth lerp)
+        const leftEyeCenter = { x: 310, y: 220 };
+        const rightEyeCenter = { x: 690, y: 220 };
+
+        let pupilPos = { x: 0, y: 0 };
+        let targetPupilPos = { x: 0, y: 0 };
+        const maxPupilOffset = { x: 45, y: 35 };
+
+        // Blinking system
+        let isBlinking = false;
+        let blinkTimeout = null;
+
+        // Auto Wander timer
+        let autoWanderInterval = null;
+
+        // Web Audio API for Cute Sound FX & Voice Reactivity
+        let audioCtx = null;
+        let analyser = null;
+        let micStream = null;
+
+        /* ================= Clock & Date ================= */
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            timeText.textContent = `${hours}:${minutes}`;
+
+            const options = { weekday: 'short', month: 'short', day: 'numeric' };
+            dateText.textContent = now.toLocaleDateString('en-US', options).toUpperCase();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        /* ================= Web Audio Sound Effects ================= */
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playCuteChime(freq1 = 523.25, freq2 = 659.25) {
+            if (!soundEnabled) return;
+            try {
+                initAudioContext();
+                const now = audioCtx.currentTime;
+
+                const osc1 = audioCtx.createOscillator();
+                const osc2 = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc1.type = 'sine';
+                osc2.type = 'triangle';
+
+                osc1.frequency.setValueAtTime(freq1, now);
+                osc2.frequency.setValueAtTime(freq2, now + 0.08);
+
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc1.start(now);
+                osc2.start(now + 0.08);
+                osc1.stop(now + 0.35);
+                osc2.stop(now + 0.35);
+            } catch (e) {
+                // Ignore audio autoplay restrictions
+            }
+        }
+
+        function toggleSoundFx() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundBtn');
+            btn.innerHTML = `<span class="emoji">${soundEnabled ? '🔊' : '🔇'}</span> Sound: ${soundEnabled ? 'ON' : 'OFF'}`;
+            if (soundEnabled) playCuteChime(600, 800);
+        }
+
+        /* ================= Expression Engine ================= */
+        function setExpression(expr, btnElement = null) {
+            if (!expr) return;
+            currentExpression = expr;
+
+            // Highlight active button if passed
+            if (btnElement) {
+                const exprButtons = document.querySelectorAll('#exprGrid .hud-btn');
+                exprButtons.forEach(b => b.classList.remove('active'));
+                btnElement.classList.add('active');
+            }
+
+            try {
+                playCuteChime(expr === 'wink' ? 700 : 523, 659);
+            } catch (e) { }
+
+            // Safely reset Eyelid transforms & visibility
+            if (leftUpperLid) leftUpperLid.style.transform = 'translateY(0px)';
+            if (leftLowerLid) leftLowerLid.style.transform = 'translateY(0px)';
+            if (rightUpperLid) rightUpperLid.style.transform = 'translateY(0px)';
+            if (rightLowerLid) rightLowerLid.style.transform = 'translateY(0px)';
+
+            if (leftWinkArc) leftWinkArc.style.opacity = '0';
+            if (rightWinkArc) rightWinkArc.style.opacity = '0';
+            if (leftSclera) leftSclera.style.opacity = '1';
+            if (rightSclera) rightSclera.style.opacity = '1';
+
+            if (leftBlush) leftBlush.classList.remove('active');
+            if (rightBlush) rightBlush.classList.remove('active');
+
+            if (leftPupilMain) {
+                leftPupilMain.setAttribute('rx', '72');
+                leftPupilMain.setAttribute('ry', '72');
+            }
+            if (rightPupilMain) {
+                rightPupilMain.setAttribute('rx', '72');
+                rightPupilMain.setAttribute('ry', '72');
+            }
+
+            // Reset highlight shapes to circles
+            setShineShape('circle');
+
+            switch (expr) {
+                case 'happy':
+                    if (leftLowerLid) leftLowerLid.style.transform = 'translateY(-35px)';
+                    if (rightLowerLid) rightLowerLid.style.transform = 'translateY(-35px)';
+                    if (leftBlush) leftBlush.classList.add('active');
+                    if (rightBlush) rightBlush.classList.add('active');
+                    break;
+
+                case 'normal':
+                    break;
+
+                case 'wow':
+                    if (leftUpperLid) leftUpperLid.style.transform = 'translateY(-20px)';
+                    if (rightUpperLid) rightUpperLid.style.transform = 'translateY(-20px)';
+                    if (leftPupilMain) {
+                        leftPupilMain.setAttribute('rx', '84');
+                        leftPupilMain.setAttribute('ry', '84');
+                    }
+                    if (rightPupilMain) {
+                        rightPupilMain.setAttribute('rx', '84');
+                        rightPupilMain.setAttribute('ry', '84');
+                    }
+                    if (leftBlush) leftBlush.classList.add('active');
+                    if (rightBlush) rightBlush.classList.add('active');
+                    break;
+
+                case 'wink':
+                    if (rightSclera) rightSclera.style.opacity = '0';
+                    if (rightWinkArc) rightWinkArc.style.opacity = '1';
+                    if (leftLowerLid) leftLowerLid.style.transform = 'translateY(-25px)';
+                    if (leftBlush) leftBlush.classList.add('active');
+                    if (rightBlush) rightBlush.classList.add('active');
+                    break;
+
+                case 'love':
+                    setShineShape('heart');
+                    if (leftLowerLid) leftLowerLid.style.transform = 'translateY(-30px)';
+                    if (rightLowerLid) rightLowerLid.style.transform = 'translateY(-30px)';
+                    if (leftBlush) leftBlush.classList.add('active');
+                    if (rightBlush) rightBlush.classList.add('active');
+                    break;
+
+                case 'sleep':
+                    if (leftUpperLid) leftUpperLid.style.transform = 'translateY(110px)';
+                    if (rightUpperLid) rightUpperLid.style.transform = 'translateY(110px)';
+                    break;
+            }
+        }
+
+        function setShineShape(type) {
+            const circles = document.querySelectorAll('#leftShineCircle, #rightShineCircle');
+            const hearts = document.querySelectorAll('#leftShineHeart, #rightShineHeart');
+            const stars = document.querySelectorAll('#leftShineStar, #rightShineStar');
+
+            circles.forEach(el => { if (el) el.style.display = (type === 'circle' ? 'block' : 'none'); });
+            hearts.forEach(el => { if (el) el.style.display = (type === 'heart' ? 'block' : 'none'); });
+            stars.forEach(el => { if (el) el.style.display = (type === 'star' ? 'block' : 'none'); });
+        }
+
+        /* ================= Natural Blinking ================= */
+        function triggerBlink() {
+            if (isBlinking || currentExpression === 'wink' || currentExpression === 'sleep') return;
+            isBlinking = true;
+
+            const prevLeftUpper = leftUpperLid.style.transform;
+            const prevRightUpper = rightUpperLid.style.transform;
+
+            leftUpperLid.style.transform = 'translateY(120px)';
+            rightUpperLid.style.transform = 'translateY(120px)';
+
+            setTimeout(() => {
+                leftUpperLid.style.transform = prevLeftUpper;
+                rightUpperLid.style.transform = prevRightUpper;
+                isBlinking = false;
+            }, 140);
+
+            // Schedule next random blink (between 2.5s and 6s)
+            const nextBlink = Math.random() * 3500 + 2500;
+            blinkTimeout = setTimeout(triggerBlink, nextBlink);
+        }
+        blinkTimeout = setTimeout(triggerBlink, 3000);
+
+        /* ================= Pupil Tracking Engine ================= */
+        function updatePupilPosition() {
+            // Smooth lerp (Exponential damping)
+            pupilPos.x += (targetPupilPos.x - pupilPos.x) * 0.12;
+            pupilPos.y += (targetPupilPos.y - pupilPos.y) * 0.12;
+
+            const transformStr = `translate(${310 + pupilPos.x}, ${220 + pupilPos.y})`;
+            const transformRightStr = `translate(${690 + pupilPos.x}, ${220 + pupilPos.y})`;
+
+            leftPupilGroup.setAttribute('transform', transformStr);
+            rightPupilGroup.setAttribute('transform', transformRightStr);
+
+            requestAnimationFrame(updatePupilPosition);
+        }
+        requestAnimationFrame(updatePupilPosition);
+
+        /* ================= Tracking Modes ================= */
+        function setTrackingMode(mode) {
+            trackingMode = mode;
+            document.querySelectorAll('#controlHud .btn-grid button').forEach(b => {
+                if (b.id.startsWith('mode')) b.classList.remove('active');
+            });
+
+            if (mode === 'cam') {
+                document.getElementById('modeCamBtn').classList.add('active');
+                statusText.textContent = 'CAMERA TRACKING ACTIVE';
+                initWebcamTracking();
+            } else if (mode === 'mouse') {
+                document.getElementById('modeMouseBtn').classList.add('active');
+                statusText.textContent = 'MOUSE TRACKING ACTIVE';
+                stopWebcam();
+            } else if (mode === 'auto') {
+                document.getElementById('modeAutoBtn').classList.add('active');
+                statusText.textContent = 'AI WANDER ACTIVE';
+                stopWebcam();
+                startAutoWander();
+            }
+            playCuteChime(400, 600);
+        }
+
+        // Mouse Tracking Handler
+        window.addEventListener('mousemove', (e) => {
+            if (trackingMode !== 'mouse') return;
+
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
+
+            const normX = (e.clientX - cx) / cx;
+            const normY = (e.clientY - cy) / cy;
+
+            targetPupilPos.x = normX * maxPupilOffset.x;
+            targetPupilPos.y = normY * maxPupilOffset.y;
+        });
+
+        // Touch Tracking Handler for touch displays
+        window.addEventListener('touchmove', (e) => {
+            if (trackingMode !== 'mouse' || !e.touches[0]) return;
+
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
+
+            const normX = (e.touches[0].clientX - cx) / cx;
+            const normY = (e.touches[0].clientY - cy) / cy;
+
+            targetPupilPos.x = normX * maxPupilOffset.x;
+            targetPupilPos.y = normY * maxPupilOffset.y;
+        });
+
+        // Auto Wander Mode (Organic micro-saccades)
+        function startAutoWander() {
+            if (autoWanderInterval) clearInterval(autoWanderInterval);
+
+            autoWanderInterval = setInterval(() => {
+                if (trackingMode !== 'auto') return;
+
+                // Random target position within bounds
+                const randomX = (Math.random() - 0.5) * 2 * maxPupilOffset.x;
+                const randomY = (Math.random() - 0.5) * 2 * maxPupilOffset.y;
+
+                targetPupilPos.x = randomX;
+                targetPupilPos.y = randomY;
+
+                // 25% chance to trigger quick cute expression tweak
+                if (Math.random() < 0.25) {
+                    const exprs = ['happy', 'normal', 'wow', 'love'];
+                    const randExpr = exprs[Math.floor(Math.random() * exprs.length)];
+                    setExpression(randExpr);
+                }
+            }, 2200);
+        }
+
+        // Webcam Face Tracking Engine
+        let videoCanvas = null;
+        let videoCtx = null;
+        let camInterval = null;
+
+        async function initWebcamTracking() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 320, height: 240, facingMode: 'user' }
+                });
+                webcamVideo.srcObject = stream;
+                statusText.textContent = 'CAMERA TRACKING ACTIVE';
+
+                if (!videoCanvas) {
+                    videoCanvas = document.createElement('canvas');
+                    videoCanvas.width = 160;
+                    videoCanvas.height = 120;
+                    videoCtx = videoCanvas.getContext('2d');
+                }
+
+                // Brightness/Center-of-mass facial detection estimation loop
+                if (camInterval) clearInterval(camInterval);
+                camInterval = setInterval(() => {
+                    if (trackingMode !== 'cam' || webcamVideo.paused || webcamVideo.ended) return;
+
+                    videoCtx.drawImage(webcamVideo, 0, 0, 160, 120);
+                    const imgData = videoCtx.getImageData(0, 0, 160, 120);
+                    const data = imgData.data;
+
+                    let totalX = 0;
+                    let totalY = 0;
+                    let count = 0;
+
+                    // Analyze center of motion / face skin-tone / brightness region
+                    for (let y = 0; y < 120; y += 4) {
+                        for (let x = 0; x < 160; x += 4) {
+                            const i = (y * 160 + x) * 4;
+                            const r = data[i];
+                            const g = data[i + 1];
+                            const b = data[i + 2];
+
+                            // Simple skin tone / face luminance filter
+                            if (r > 60 && g > 40 && b > 20 && r > b) {
+                                totalX += x;
+                                totalY += y;
+                                count++;
+                            }
+                        }
+                    }
+
+                    if (count > 30) {
+                        const avgX = totalX / count;
+                        const avgY = totalY / count;
+
+                        // Mirror flip X coordinate for intuitive mirror reflection
+                        const normX = -((avgX - 80) / 80);
+                        const normY = (avgY - 60) / 60;
+
+                        targetPupilPos.x = normX * maxPupilOffset.x;
+                        targetPupilPos.y = normY * maxPupilOffset.y;
+                    }
+                }, 100);
+
+            } catch (err) {
+                console.warn('Webcam not accessible, falling back to Mouse mode', err);
+                statusText.textContent = 'CAM UNAVAILABLE - MOUSE ACTIVE';
+                setTrackingMode('mouse');
+            }
+        }
+
+        function stopWebcam() {
+            if (camInterval) clearInterval(camInterval);
+            if (webcamVideo.srcObject) {
+                webcamVideo.srcObject.getTracks().forEach(t => t.stop());
+                webcamVideo.srcObject = null;
+            }
+        }
+
+        /* ================= Microphone Voice Reactivity ================= */
+        async function initVoiceListener() {
+            try {
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                initAudioContext();
+                const source = audioCtx.createMediaStreamSource(micStream);
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 32;
+                source.connect(analyser);
+
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                function animateVoiceBars() {
+                    if (analyser) {
+                        analyser.getByteFrequencyData(dataArray);
+                        let sum = 0;
+                        voiceBars.forEach((bar, index) => {
+                            const val = dataArray[index] || 0;
+                            sum += val;
+                            const height = Math.max(12, (val / 255) * 45);
+                            bar.style.height = `${height}px`;
+                        });
+
+                        // React with excited widen/happy eyes on loud speech!
+                        if (sum > 600 && currentExpression !== 'wow' && currentExpression !== 'love') {
+                            setExpression('happy');
+                        }
+                    }
+                    requestAnimationFrame(animateVoiceBars);
+                }
+                animateVoiceBars();
+
+            } catch (e) {
+                // Microphone optional
+            }
+        }
+        // Initialize voice reactivity after user interaction
+        window.addEventListener('click', () => {
+            if (!micStream) initVoiceListener();
+        }, { once: true });
+
+        /* ================= Ambient Glow Themes ================= */
+        function setGlowTheme(theme, element) {
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+            if (element) element.classList.add('selected');
+
+            switch (theme) {
+                case 'pink':
+                    ambientGlow.style.background = 'radial-gradient(circle, rgba(255, 105, 180, 0.22) 0%, rgba(218, 112, 214, 0.1) 40%, rgba(0, 0, 0, 0) 70%)';
+                    break;
+                case 'cyber':
+                    ambientGlow.style.background = 'radial-gradient(circle, rgba(0, 240, 255, 0.22) 0%, rgba(112, 0, 255, 0.12) 40%, rgba(0, 0, 0, 0) 70%)';
+                    break;
+                case 'emerald':
+                    ambientGlow.style.background = 'radial-gradient(circle, rgba(0, 255, 135, 0.22) 0%, rgba(96, 239, 255, 0.12) 40%, rgba(0, 0, 0, 0) 70%)';
+                    break;
+                case 'gold':
+                    ambientGlow.style.background = 'radial-gradient(circle, rgba(255, 183, 3, 0.22) 0%, rgba(251, 133, 0, 0.12) 40%, rgba(0, 0, 0, 0) 70%)';
+                    break;
+                case 'off':
+                    ambientGlow.style.background = 'none';
+                    break;
+            }
+            playCuteChime(800, 1000);
+        }
+
+        /* ================= UI HUD Toggle & Fullscreen ================= */
+        function toggleHud() {
+            controlHud.classList.toggle('visible');
+            playCuteChime(500, 700);
+        }
+        hudToggleBtn.addEventListener('click', toggleHud);
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'h') {
+                toggleHud();
+                document.getElementById('headerUi').classList.toggle('hidden');
+            } else if (e.key.toLowerCase() === 'f') {
+                toggleFullscreen();
+            }
+        });
+
+        // Double click anywhere to toggle fullscreen mode
+        window.addEventListener('dblclick', toggleFullscreen);
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => { });
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        // Fade out hint toast after 6 seconds
+        setTimeout(() => {
+            hintToast.style.opacity = '0';
+        }, 6000);
+
+        // Start default Camera tracking mode
+        initWebcamTracking();
+
+    </script>
+</body>
+
+</html>
